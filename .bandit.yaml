@@ -1,0 +1,4 @@
+---
+# B404: subprocess imports
+# B603: using shell=False (hilariously, shell=True is an even higher vulnerability)
+skips: [B404, B603]
