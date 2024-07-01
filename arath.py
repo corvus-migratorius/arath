@@ -1,23 +1,120 @@
 #!/usr/bin/env python3
 # -*- encoding: utf-8 -*-
 
+from pathlib import Path
+
 from ara.clients.offline import AraOfflineClient  # type: ignore
 
 
+class Handler:
+    def __init__(self):
+        self.client = AraOfflineClient()
+        self.playbooks: list[dict] = []
+        self.actions: list[dict] = []
+        
+
+    def run(self) -> None:
+        self.fetch_playbooks()
+        self.fetch_actions()
+        self.report()
+
+
+    def fetch_playbooks(self) -> None:
+        self.playbooks = self.client.get("/api/v1/playbooks", status=["completed", "failed"], order="ended")
+
+
+    def fetch_actions(self) -> None:
+        # For each result, print the task and host information
+        for playbook in self.playbooks["results"]:
+            # print("playbook:", playbook)
+
+            results = self.client.get(f"/api/v1/results?playbook={playbook['id']}")["results"]
+            
+            for result in results:
+                task = self.client.get(f"/api/v1/tasks/{result['task']}")
+                host = self.client.get(f"/api/v1/hosts/{result['host']}")
+                filename = Path(task["file"]["path"]).name
+                tags = task["tags"] 
+                
+                self.actions.append({
+                    "host": host["name"],
+                    "task": task["name"],
+                    "status": result["status"],
+                    "file": filename,
+                    "tags": tags,
+                    "ended": result["ended"]
+                })
+
+
+    def filter(self, statuses: list[str] = ["ok", "skipped"]) -> list[dict]:
+        """
+        Filter out irrelevant statuses.
+        """
+        return [action for action in self.actions if action["status"] not in statuses]
+
+
+    def report(self) -> None:
+        relevant = self.filter()
+        for action in relevant:
+            print(action)
+
+            #     task = self.client.get(f"/api/v1/tasks/{result['task']}")
+            #     task["host"] = self.client.get(f"/api/v1/hosts/{result['host']}")
+            #     task["status"] = result["status"]
+                
+            #     self.tasks.append(task)
+                
+            #     results["results"]:
+            #     task = client.get("/api/v1/tasks/%s" % result["task"])
+            #     host = client.get("/api/v1/hosts/%s" % result["host"])
+
+            #     if(result["status"] not in ["ok", "skipped"]):
+            #         if_something_changed = True
+
+            #         print(template.format(
+            #         timestamp=result["ended"],
+            #         status=result["status"],
+            #         host=host["name"],
+            #         task=task["name"],
+            #         task_file=task["path"],
+            #         lineno=task["lineno"]
+            #         ))
+
+            #         tg_message = tg_message + template.format(
+            #         timestamp=result["ended"],
+            #         status=result["status"],
+            #         host=host["name"],
+            #         task=task["name"],
+            #         task_file=task["path"],
+            #         lineno=task["lineno"]
+            #         ) + "\n" + "\n"
+            # print("\n")
+
+
 def main():
-    client = AraOfflineClient()
+    handler = Handler()
 
-    playbooks = client.get("/api/v1/playbooks", status=["completed", "failed"], order="ended")
+    handler.run()
 
-    print(f"discovered playbook runs: {len(playbooks['results'])}")
+    # handler.fetch_playbooks()
+    # handler.fetch_actions()
 
-    for playbook in playbooks["results"]:
-        print("playbook: " + playbook["path"])
+    # for action in handler.actions:
+    #     print(action)
 
-        if(playbook["status"] == "completed"):
-            print("playbook completed at: " + playbook["ended"])
-        else:
-            print("playbook failed at: " + playbook["ended"])
+    # client = AraOfflineClient()
+
+    # playbooks = client.get("/api/v1/playbooks", status=["completed", "failed"], order="ended")
+
+    # print(f"discovered playbook runs: {len(playbooks['results'])}")
+
+    # for playbook in playbooks["results"]:
+    #     print("playbook: " + playbook["path"])
+
+    #     if(playbook["status"] == "completed"):
+    #         print("playbook completed at: " + playbook["ended"])
+    #     else:
+    #         print("playbook failed at: " + playbook["ended"])
 
 
 if __name__ == "__main__":
