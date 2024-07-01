@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- encoding: utf-8 -*-
 
-from ara.clients.offline import AraOfflineClient
+from ara.clients.offline import AraOfflineClient  # type: ignore
 
 
 def main():
