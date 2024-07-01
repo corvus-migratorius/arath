@@ -1,100 +1,124 @@
 #!/usr/bin/env python3
-# Import the client
-from ara.clients.http import AraHttpClient
+# -*- encoding: utf-8 -*-
 
-# Import some libs
-from datetime import datetime, timedelta
-import requests
+from ara.clients.offline import AraOfflineClient
 
-# Import config parser and parse
-import configparser
 
-config = configparser.ConfigParser()
-config.read(r'config.txt')
-# It contains vars "tg_TOKEN", "tg_chat_id", "endpoint"
+def main():
+    client = AraOfflineClient()
 
-tg_TOKEN = config.get('tg', 'tg_TOKEN')
-tg_chat_id = config.get('tg', 'tg_chat_id')
-endpoint = config.get('ara', 'endpoint')
+    playbooks = client.get("/api/v1/playbooks", status=["completed", "failed"], order="ended")
 
-# Just set default value
-tg_message = "none"
+    print(f"discovered playbook runs: {len(playbooks['results'])}")
 
-# Instanciate the HTTP client with an endpoint where an API server is listening
-client = AraHttpClient(endpoint=endpoint)
+    for playbook in playbooks["results"]:
+        print("playbook: " + playbook["path"])
 
-f = open("ISOTIME", "r")
-last_time_parsed = f.readline()
-f.close()
+        if(playbook["status"] == "completed"):
+            print("playbook completed at: " + playbook["ended"])
+        else:
+            print("playbook failed at: " + playbook["ended"])
 
-time_to_parse= last_time_parsed
 
-last_time_parsed = datetime.now()
-last_time_parsed = last_time_parsed.isoformat()
+if __name__ == "__main__":
+    main()
 
-# Get a list of failed playbooks
-# /api/v1/playbooks
-# Example ended_after for test api is "2021-09-09T22:12:51.607864Z". Write it to a "ISOTIME" file.
-playbooks = client.get("/api/v1/playbooks", status=["completed", "failed"], order="ended", ended_after=time_to_parse)
 
-f = open("ISOTIME", "w")
-f.write(last_time_parsed)
-f.close()
+# import requests
+# from ara.clients.http import AraHttpClient
 
-# If there are any results from our query, get more information about the
-# failure and print something helpful
-template = "{timestamp}: {host} {status} '{task}' ({task_file}:{lineno})"
+# # Import some libs
+# from datetime import datetime, timedelta
 
-for playbook in playbooks["results"]:
-    tg_message = "```\n"
+# # Import config parser and parse
+# import configparser
 
-    print("playbook: " + playbook["path"])
-    tg_message = tg_message + "playbook: " + playbook["path"] + "\n"
+# config = configparser.ConfigParser()
+# config.read(r'config.txt')
+# # It contains vars "tg_TOKEN", "tg_chat_id", "endpoint"
 
-    if(playbook["status"] == "completed"):
-        print("playbook completed at: " + playbook["ended"])
-        tg_message = tg_message + "playbook completed at: " + playbook["ended"] + "\n"
-    else:
-        print("playbook failed at: " + playbook["ended"])
-        tg_message = tg_message + "playbook failed at: " + playbook["ended"] + "\n"
+# tg_TOKEN = config.get('tg', 'tg_TOKEN')
+# tg_chat_id = config.get('tg', 'tg_chat_id')
+# endpoint = config.get('ara', 'endpoint')
 
-    tg_message = tg_message + "\n"
+# # Just set default value
+# tg_message = "none"
 
-    results = client.get("/api/v1/results?playbook=%s" % playbook["id"])
+# # Instanciate the HTTP client with an endpoint where an API server is listening
+# client = AraHttpClient(endpoint=endpoint)
 
-    if_something_changed = False
+# f = open("ISOTIME", "r")
+# last_time_parsed = f.readline()
+# f.close()
 
-    # For each result, print the task and host information
-    for result in results["results"]:
-        task = client.get("/api/v1/tasks/%s" % result["task"])
-        host = client.get("/api/v1/hosts/%s" % result["host"])
+# time_to_parse= last_time_parsed
 
-        if(result["status"] not in ["ok", "skipped"]):
-            if_something_changed = True
+# last_time_parsed = datetime.now()
+# last_time_parsed = last_time_parsed.isoformat()
 
-            print(template.format(
-               timestamp=result["ended"],
-               status=result["status"],
-               host=host["name"],
-               task=task["name"],
-               task_file=task["path"],
-               lineno=task["lineno"]
-            ))
+# # Get a list of failed playbooks
+# # /api/v1/playbooks
+# # Example ended_after for test api is "2021-09-09T22:12:51.607864Z". Write it to a "ISOTIME" file.
+# playbooks = client.get("/api/v1/playbooks", status=["completed", "failed"], order="ended", ended_after=time_to_parse)
 
-            tg_message = tg_message + template.format(
-               timestamp=result["ended"],
-               status=result["status"],
-               host=host["name"],
-               task=task["name"],
-               task_file=task["path"],
-               lineno=task["lineno"]
-            ) + "\n" + "\n"
-    print("\n")
+# f = open("ISOTIME", "w")
+# f.write(last_time_parsed)
+# f.close()
 
-    # Do not send message if noting changed
-    if(not(if_something_changed)):
-        continue
+# # If there are any results from our query, get more information about the
+# # failure and print something helpful
+# template = "{timestamp}: {host} {status} '{task}' ({task_file}:{lineno})"
 
-    tg_message = tg_message + "\n" + "```"
-    tg_url = f"https://api.telegram.org/bot{tg_TOKEN}/sendMessage?chat_id={tg_chat_id}&text={tg_message}&parse_mode=MarkdownV2"
-    requests.get(tg_url).json() # Send message to tg
+# for playbook in playbooks["results"]:
+#     tg_message = "```\n"
+
+#     print("playbook: " + playbook["path"])
+#     tg_message = tg_message + "playbook: " + playbook["path"] + "\n"
+
+#     if(playbook["status"] == "completed"):
+#         print("playbook completed at: " + playbook["ended"])
+#         tg_message = tg_message + "playbook completed at: " + playbook["ended"] + "\n"
+#     else:
+#         print("playbook failed at: " + playbook["ended"])
+#         tg_message = tg_message + "playbook failed at: " + playbook["ended"] + "\n"
+
+#     tg_message = tg_message + "\n"
+
+#     results = client.get("/api/v1/results?playbook=%s" % playbook["id"])
+
+#     if_something_changed = False
+
+#     # For each result, print the task and host information
+#     for result in results["results"]:
+#         task = client.get("/api/v1/tasks/%s" % result["task"])
+#         host = client.get("/api/v1/hosts/%s" % result["host"])
+
+#         if(result["status"] not in ["ok", "skipped"]):
+#             if_something_changed = True
+
+#             print(template.format(
+#                timestamp=result["ended"],
+#                status=result["status"],
+#                host=host["name"],
+#                task=task["name"],
+#                task_file=task["path"],
+#                lineno=task["lineno"]
+#             ))
+
+#             tg_message = tg_message + template.format(
+#                timestamp=result["ended"],
+#                status=result["status"],
+#                host=host["name"],
+#                task=task["name"],
+#                task_file=task["path"],
+#                lineno=task["lineno"]
+#             ) + "\n" + "\n"
+#     print("\n")
+
+#     # Do not send message if noting changed
+#     if(not(if_something_changed)):
+#         continue
+
+#     tg_message = tg_message + "\n" + "```"
+#     tg_url = f"https://api.telegram.org/bot{tg_TOKEN}/sendMessage?chat_id={tg_chat_id}&text={tg_message}&parse_mode=MarkdownV2"
+#     requests.get(tg_url).json() # Send message to tg
