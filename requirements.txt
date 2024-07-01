@@ -1,1 +1,2 @@
+ara[server]==1.7.1
 requests==2.31.0
