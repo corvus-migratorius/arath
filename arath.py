@@ -9,7 +9,7 @@ from ara.clients.offline import AraOfflineClient  # type: ignore
 class Handler:
     def __init__(self):
         self.client = AraOfflineClient()
-        self.playbooks: list[dict] = []
+        self.playbooks = []
         self.actions: list[dict] = []
         
 
