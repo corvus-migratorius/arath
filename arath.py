@@ -33,11 +33,13 @@ class Handler:
             for result in results:
                 task = self.client.get(f"/api/v1/tasks/{result['task']}")
                 host = self.client.get(f"/api/v1/hosts/{result['host']}")
+                hostname_inventory = host["name"]
+                hostname_fact = host["facts"]["ansible_hostname"] 
                 filename = Path(task["file"]["path"]).name
                 tags = task["tags"] 
                 
                 self.actions.append({
-                    "host": host["name"],
+                    "host": hostname_fact or hostname_inventory,
                     "task": task["name"],
                     "status": result["status"],
                     "file": filename,
