@@ -1,0 +1,40 @@
+---
+name: linters
+
+'on':
+  push:
+    branches: [ "master", "dev" ]
+  pull_request:
+    branches: [ "master", "dev" ]
+
+jobs:
+  linters:
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: mamba-org/setup-micromamba@v1
+        with:
+          micromamba-version: '1.5.8-0'
+          environment-file: environment.ci.yaml
+          init-shell: bash
+          cache-environment: true
+          post-cleanup: 'all'
+
+      - uses: chartboost/ruff-action@v1
+
+      - name: Lint docstrings
+        run: pydoclint .
+        shell: micromamba-shell {0}
+
+      - name: Type check with MyPy
+        run: mypy *.py
+        shell: micromamba-shell {0}
+
+      - name: Vulnerability scan with Bandit
+        run: >
+          bandit -c .bandit.yaml ingester.py
+        shell: micromamba-shell {0}
