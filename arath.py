@@ -36,16 +36,21 @@ class Handler:
                 hostname_inventory = host["name"]
                 hostname_fact = host["facts"]["ansible_hostname"] 
                 filename = Path(task["file"]["path"]).name
+                playbook_name = task["play"]["name"]
                 tags = task["tags"] 
                 
                 self.actions.append({
                     "host": hostname_fact or hostname_inventory,
+                    "playbook": playbook_name,
+                    "tags": tags,
                     "task": task["name"],
                     "status": result["status"],
-                    "file": filename,
-                    "tags": tags,
+                    "filename": filename,
+                    "lineno": task["lineno"],
                     "ended": result["ended"]
                 })
+
+
 
 
     def filter(self, statuses: list[str] = ["ok", "skipped"]) -> list[dict]:
