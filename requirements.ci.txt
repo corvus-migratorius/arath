@@ -1,7 +1,7 @@
 bandit==1.7.9
 mypy==1.10.0
 pandas-stubs==2.2.2.240603
-pydoclint==0.4.1
+pydoclint==0.5.3
 pytest==8.2.2
 ruff==0.4.10
 types-requests==2.32.0.20240622
