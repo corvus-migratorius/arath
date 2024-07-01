@@ -11,6 +11,11 @@ class Handler:
         self.client = AraOfflineClient()
         self.playbooks = []
         self.actions: list[dict] = []
+        self.report_template = """
+{status}: "{taskname}"
+{hostname} [{tagline}] "{playbook}"
+{filename}:{lineno}
+        """.strip()
         
 
     def run(self) -> None:
@@ -26,31 +31,28 @@ class Handler:
     def fetch_actions(self) -> None:
         # For each result, print the task and host information
         for playbook in self.playbooks["results"]:
-            # print("playbook:", playbook)
-
             results = self.client.get(f"/api/v1/results?playbook={playbook['id']}")["results"]
             
             for result in results:
                 task = self.client.get(f"/api/v1/tasks/{result['task']}")
                 host = self.client.get(f"/api/v1/hosts/{result['host']}")
-                hostname_inventory = host["name"]
+                hostname_inv = host["name"]
                 hostname_fact = host["facts"]["ansible_hostname"] 
                 filename = Path(task["file"]["path"]).name
                 playbook_name = task["play"]["name"]
                 tags = task["tags"] 
                 
                 self.actions.append({
-                    "host": hostname_fact or hostname_inventory,
+                    "hostname_fact": hostname_fact,
+                    "hostname_inv": hostname_inv,
                     "playbook": playbook_name,
                     "tags": tags,
-                    "task": task["name"],
+                    "taskname": task["name"],
                     "status": result["status"],
                     "filename": filename,
                     "lineno": task["lineno"],
                     "ended": result["ended"]
                 })
-
-
 
 
     def filter(self, statuses: list[str] = ["ok", "skipped"]) -> list[dict]:
@@ -59,11 +61,19 @@ class Handler:
         """
         return [action for action in self.actions if action["status"] not in statuses]
 
+    def mk_template(self, action: dict) -> str:
+        modified = {
+            "hostname": action["hostname_fact"] or action["hostname_inv"],
+            "tagline":  " ".join(action["tags"]),
+            **action
+        }
+        return self.report_template.format(**modified)
 
     def report(self) -> None:
         relevant = self.filter()
         for action in relevant:
-            print(action)
+            report = self.mk_template(action)
+            print(report)
 
             #     task = self.client.get(f"/api/v1/tasks/{result['task']}")
             #     task["host"] = self.client.get(f"/api/v1/hosts/{result['host']}")
