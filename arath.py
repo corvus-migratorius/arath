@@ -133,63 +133,11 @@ class Handler:
             report = self.mk_template(action)
             print(report)
 
-            #     task = self.client.get(f"/api/v1/tasks/{result['task']}")
-            #     task["host"] = self.client.get(f"/api/v1/hosts/{result['host']}")
-            #     task["status"] = result["status"]
-                
-            #     self.tasks.append(task)
-                
-            #     results["results"]:
-            #     task = client.get("/api/v1/tasks/%s" % result["task"])
-            #     host = client.get("/api/v1/hosts/%s" % result["host"])
-
-            #     if(result["status"] not in ["ok", "skipped"]):
-            #         if_something_changed = True
-
-            #         print(template.format(
-            #         timestamp=result["ended"],
-            #         status=result["status"],
-            #         host=host["name"],
-            #         task=task["name"],
-            #         task_file=task["path"],
-            #         lineno=task["lineno"]
-            #         ))
-
-            #         tg_message = tg_message + template.format(
-            #         timestamp=result["ended"],
-            #         status=result["status"],
-            #         host=host["name"],
-            #         task=task["name"],
-            #         task_file=task["path"],
-            #         lineno=task["lineno"]
-            #         ) + "\n" + "\n"
-            # print("\n")
-
 
 def main():
     handler = Handler()
 
     handler.run()
-
-    # handler.fetch_playbooks()
-    # handler.fetch_actions()
-
-    # for action in handler.actions:
-    #     print(action)
-
-    # client = AraOfflineClient()
-
-    # playbooks = client.get("/api/v1/playbooks", status=["completed", "failed"], order="ended")
-
-    # print(f"discovered playbook runs: {len(playbooks['results'])}")
-
-    # for playbook in playbooks["results"]:
-    #     print("playbook: " + playbook["path"])
-
-    #     if(playbook["status"] == "completed"):
-    #         print("playbook completed at: " + playbook["ended"])
-    #     else:
-    #         print("playbook failed at: " + playbook["ended"])
 
 
 if __name__ == "__main__":
