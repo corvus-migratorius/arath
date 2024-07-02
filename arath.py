@@ -8,6 +8,9 @@ from ara.clients.offline import AraOfflineClient  # type: ignore
 
 
 class Handler:
+    """
+    The ARATH handler class.
+    """
     def __init__(self):
         self.client = AraOfflineClient()
         self.playbooks = []
@@ -24,7 +27,22 @@ class Handler:
         """.strip()
 
 
+    def run(self) -> None:
+        """
+        Perform the fetch -> filter -> report cycle.
+        """
+        self.fetch_playbooks()
+        self.fetch_actions()
+        self.report()
+
+        # only if the run was successful
+        self.update_timestamp()
+
+
     def update_timestamp(self):
+        """
+        Save to disk the timestamp of the beginning of this run.
+        """
         with open(self.timestamp_path, "w", encoding="utf-8") as file:
             file.write(self.timestamp_now)
 
@@ -42,16 +60,10 @@ class Handler:
             return dt.fromisoformat("1970-01-01T00:00:00.0Z")
 
 
-    def run(self) -> None:
-        self.fetch_playbooks()
-        self.fetch_actions()
-        self.report()
-
-        # only if the run was successful
-        self.update_timestamp()
-
-
     def fetch_playbooks(self) -> None:
+        """
+        Fetch from ARA API playbook objects generated after the previous run started.
+        """
         self.playbooks = self.client.get(
             "/api/v1/playbooks",
             status=["completed", "failed"],
@@ -61,6 +73,9 @@ class Handler:
 
 
     def fetch_actions(self) -> None:
+        """
+        Fetch from ARA API task objects for the relevant plays.
+        """
         print(f"current timestamp: {self.timestamp_now}")
         print(f"previous timestamp: {self.timestamp_prev}")
 
@@ -98,6 +113,9 @@ class Handler:
 
 
     def mk_template(self, action: dict) -> str:
+        """
+        Fill the report template string for the given "action" (task).
+        """
         modified = {
             "hostname": action["hostname_fact"] or action["hostname_inv"],
             "tagline":  " ".join(action["tags"]),
@@ -107,6 +125,9 @@ class Handler:
 
 
     def report(self) -> None:
+        """
+        Report the tasks matching the filter criteria.
+        """
         relevant = self.filter()
         for action in relevant:
             report = self.mk_template(action)
