@@ -1,5 +1,5 @@
 bandit==1.7.9
-mypy==1.10.1
+mypy==1.13.0
 pandas-stubs==2.2.2.240603
 pydoclint==0.5.3
 pytest==8.2.2
